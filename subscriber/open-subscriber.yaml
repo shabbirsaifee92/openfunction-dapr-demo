@@ -1,0 +1,59 @@
+apiVersion: core.openfunction.io/v1beta2
+kind: Function
+metadata:
+  name: subscriber
+  namespace: knative-dapr-demo
+spec:
+  version: "v1.0.0"
+  image: shabbirsaifee/knative-dapr-subscriber:1.0.0
+  serving:
+    scaleOptions:
+      minReplicas: 0
+      maxReplicas: 10
+      keda:
+        scaledObject:
+          pollingInterval: 5
+          cooldownPeriod: 10
+          advanced:
+            horizontalPodAutoscalerConfig:
+              behavior:
+                scaleDown:
+                  stabilizationWindowSeconds: 45
+                  policies:
+                  - type: Percent
+                    value: 50
+                    periodSeconds: 15
+                scaleUp:
+                  stabilizationWindowSeconds: 0
+        triggers:
+          - type: azure-servicebus
+            metadata:
+              subscriptionName: subscriber-knative-dapr-demo
+              connectionFromEnv: SERVICEBUS_CONNECTIONSTRING
+              messageCount: "1"
+              topicName: knative-dapr-demo
+    annotations:
+      openfunction.io/enable-dapr: "true"
+      openfunction.io/dapr-service-mode: "sidecar"
+      dapr.io/app-protocol: "http"
+      dapr.io/app-port: "8080"
+    template:
+      containers:
+        - name: function
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SERVICE_BUS_TOPIC
+              value: "knative-dapr-demo"
+            - name: APP_PORT
+              value: "8080"
+            - name: SERVICEBUS_CONNECTIONSTRING
+              value: "Endpoint=sb://<>.servicebus.windows.net/;SharedAccessKeyName=<>;SharedAccessKey=<>;EntityPath=<>"
+            - name: SERVICE_BUS_NAME
+              value: azure-servicebus
+          imagePullPolicy: Always
+    triggers:
+      dapr:
+        - name: azure-servicebus
+          type: pubsub.azure.servicebus.topics
+          topic: knative-dapr-demo
