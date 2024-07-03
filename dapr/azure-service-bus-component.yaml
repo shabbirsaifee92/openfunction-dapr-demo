@@ -1,0 +1,12 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: azure-servicebus
+  namespace: knative-dapr-demo
+spec:
+  type: pubsub.azure.servicebus.topics
+  version: v1
+  metadata:
+  # Required when not using Microsoft Entra ID Authentication
+  - name: connectionString
+    value: value: "Endpoint=sb://<>.servicebus.windows.net/;SharedAccessKeyName=<>;SharedAccessKey=<>;EntityPath=<>"
